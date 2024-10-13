@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using GameNetcodeStuff;
+﻿using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 

@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using GameNetcodeStuff;
+﻿using System.Linq;
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace LethalSleep.Patches {
     

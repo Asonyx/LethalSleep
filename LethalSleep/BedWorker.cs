@@ -16,14 +16,20 @@ namespace LethalSleep {
             new Vector3(-2.069098f, -0.7690924f, 1.5f),
             new Vector3(-2.069098f, -0.7690924f, 2.5f)
         };
-        
-        public static readonly Vector3 WakeUpPosition = new Vector3(-2.569098f, 0.9809076f, -1.25f);
+
+        public static readonly Vector3[] WakeUpPositions = {
+            new Vector3(-0.4752663f, 1.189903f, -0.09496737f),
+            new Vector3(0.488894f, 1.189903f, -0.09496737f),
+            new Vector3(0.488894f, -1.074116f, -0.09496817f),
+            new Vector3(-0.4752663f, -1.074116f, -0.09496817f)
+        };
 
         private static InteractTrigger _sleepTrigger;
         private static PlaceableShipObject _bed;
         
         public static readonly Dictionary<int, int> SleepingPlayers = new Dictionary<int, int>();
         public static readonly List<Transform> SleepingSlots = new List<Transform>();
+        public static readonly Dictionary<int, Vector3> WakePlayerPos = new Dictionary<int, Vector3>();
         
         private static int _currentSlot;
         
@@ -48,6 +54,8 @@ namespace LethalSleep {
                 SleepingSlots.Add(slot.transform);
                 i++;
             }
+
+            
             
             InteractTrigger sleepTrigger = bedCollider.AddComponent<InteractTrigger>();
             SetupTrigger(sleepTrigger);
@@ -82,7 +90,7 @@ namespace LethalSleep {
 
         public static void Update() {
             _bed.inUse =  SleepingPlayers.Count > 0;
-            _sleepTrigger.interactable = SleepingPlayers.Count < SleepingPositions.Length;
+            _sleepTrigger.interactable = EnoughSpaceToSleep();
             if (SleepingPlayers.Count >= SleepingPositions.Length) return;
             
             for (int i = 0; i < SleepingSlots.Count; i++) {
@@ -91,6 +99,13 @@ namespace LethalSleep {
                 _currentSlot = i;
                 break;
             }
+        }
+        
+        public static Vector3 GetWakeUpPosition(int playerId) {
+            if (!WakePlayerPos.ContainsKey(playerId)) return StartOfRound.Instance.playerSpawnPositions[0].position;
+            
+            Vector3 pos = WakePlayerPos[playerId] + new Vector3(0, 0, 2);
+            return !StartOfRound.Instance.shipInnerRoomBounds.bounds.Contains(pos) ? StartOfRound.Instance.playerSpawnPositions[0].position : pos;
         }
         
         public static bool EnoughSpaceToSleep() {
@@ -107,19 +122,25 @@ namespace LethalSleep {
         }
 
         public static void Sleep(PlayerControllerB player) {
+            if (Plugin.DisabledByError) return;
             SleepingPlayers.Add((int)player.playerClientId, _currentSlot);
+            if (!WakePlayerPos.ContainsKey((int)player.playerClientId)) 
+                WakePlayerPos.Add((int)player.playerClientId, player.transform.position);
             player.inSpecialInteractAnimation = true;
             player.disableSyncInAnimation = true;
             Update();
         }
         
         public static void WakeUp(PlayerControllerB player) {
-            SleepingPlayers.Remove((int)player.playerClientId);
+            if (SleepingPlayers.ContainsKey((int)player.playerClientId))
+                SleepingPlayers.Remove((int)player.playerClientId);
             player.inSpecialInteractAnimation = false;
             player.disableSyncInAnimation = false;
-            player.transform.SetParent(player.playersManager.playersContainer);
+            player.transform.SetParent(player.playersManager.elevatorTransform);
             player.transform.localPosition = Vector3.zero;
-            player.transform.position = WakeUpPosition + _sleepTrigger.gameObject.transform.position;
+            Vector3 wakeUpPosition = GetWakeUpPosition((int)player.playerClientId);
+            WakePlayerPos.Remove((int)player.playerClientId);
+            player.transform.position = wakeUpPosition;
             Update();
         }
 

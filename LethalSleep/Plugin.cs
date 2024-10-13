@@ -32,7 +32,7 @@ namespace LethalSleep {
             _harmony.PatchAll();
             NetcodePatcher();
             
-            logger.LogInfo("LethalSleep loaded successfully");
+            if (!DisabledByError) logger.LogInfo("LethalSleep loaded successfully");
         }
         
         private static void NetcodePatcher() {
